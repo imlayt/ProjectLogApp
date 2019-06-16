@@ -14,6 +14,7 @@ import PySimpleGUI as sg
 import sqlite3
 from sqlite3 import Error
 
+thelogfile = 'c:\\Users\\imlay\\Dowloads\\ProjectLog.db'  # Default log file
 
 class ProjectLog:
     def __init__(self, logfile, table='LogEntries'):
@@ -101,20 +102,29 @@ class ProjectLog:
             sg.Popup('Creating table FAILED(', self.table, ')', keep_on_top=True)
             return False
 
-    def addlogentry(self):
+    def addlogentry(self):  # returns True if the addition was successful
         pass
 
-    def readlogentry(self):
+    def readlogentry(self):  # returns a log record
         pass
 
-    def updatelogentry(self):
+    def updatelogentry(self):  # returns True if the update was successful
         pass
 
-    def deletelogentry(self):
+    def deletelogentry(self):  # returns True if the record was deleted
         pass
 
-    def findlogentry(self):
+    def findlogentry(self):  # returns a log record
         pass
 
-    def reportlogentries(self):
+    def reportlogentries(self):  # returns a list of log records
         pass
+
+
+def main():
+    pass
+
+
+if __name__=="__main__":
+    # execute only if run as a script
+    main()

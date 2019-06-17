@@ -15,6 +15,10 @@ import sqlite3
 from sqlite3 import Error
 
 thelogfile = 'c:\\Users\\imlay\\Dowloads\\ProjectLog.db'  # Default log file
+thelogtable = 'LogEntries'  # Default tablename
+lightblue = '#b9def4'  # color used by PySimpleGUI
+mediumblue = '#d2d2df'  # color used by PySimpleGUI
+mediumblue2 = '#534aea'  # color used by PySimpleGUI
 
 class ProjectLog:
     def __init__(self, logfile, table='LogEntries'):
@@ -121,8 +125,42 @@ class ProjectLog:
         pass
 
 
+# Define the mainscreen layout using the above layouts
+mainscreenlayout = [[sg.Text('Message Area', size=(131, 1), key='_MESSAGEAREA_')],
+                    [sg.Button('Convert', key='_CONVERT_'),
+                     sg.Exit()]]
+
 def main():
-    pass
+    global thelogfile
+    global thelogtable
+
+    # ########################################
+    # initialize main screen window
+    sg.SetOptions(element_padding=(2, 2))
+    window = sg.Window('Project Log App', background_color=mediumblue,
+            default_element_size=(15, 1)).Layout(mainscreenlayout)
+    window.Finalize()
+    window.Refresh()
+
+    while True:  # Event Loop
+        event, values = window.Read()
+        if event is None or event=="Exit":
+            sys.exit(1)
+        # instantiate a ProjectLog
+        mylog = ProjectLog(thelogfile, thelogtable)
+
+        if mylog.verifylogfile() is None:
+            thelogtable = sg.Popup('ERROR: Could not connect to the database')
+            break
+
+        if not mylog.verifytable():
+            if thelogtable=='Cancel' or thelogtable==None:
+                break
+
+            sg.Popup('ERROR: the table does not exist')
+            sg.POPUP_BUTTONS_OK_CANCEL('Exit or Cancel')
+            sg.PopupGetText('Enter a tablename or Cancel to exit the program.')
+
 
 
 if __name__=="__main__":

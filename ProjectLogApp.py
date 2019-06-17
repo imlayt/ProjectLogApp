@@ -14,7 +14,7 @@ import PySimpleGUI as sg
 import sqlite3
 from sqlite3 import Error
 
-thelogfile = 'c:\\Users\\imlay\\Dowloads\\ProjectLog.db'  # Default log file
+thelogfile = 'c:\\Users/timlay/Dowloads/ProjectLog.db'  # Default log file
 thelogtable = 'LogEntries'  # Default tablename
 lightblue = '#b9def4'  # color used by PySimpleGUI
 mediumblue = '#d2d2df'  # color used by PySimpleGUI
@@ -106,7 +106,8 @@ class ProjectLog:
             sg.Popup('Creating table FAILED(', self.table, ')', keep_on_top=True)
             return False
 
-    def addlogentry(self):  # returns True if the addition was successful
+    def addlogentry(self, logentrylist):  # returns True if the addition was successful
+        
         pass
 
     def readlogentry(self):  # returns a log record
@@ -125,8 +126,14 @@ class ProjectLog:
         pass
 
 
+def setmessage(window, messagestr):
+    window.FindElement('_MESSAGEAREA_').Update(messagestr)
+    window.Refresh()
+    
+
 # Define the mainscreen layout using the above layouts
 mainscreenlayout = [[sg.Text('Message Area', size=(131, 1), key='_MESSAGEAREA_')],
+                    [sg.Button('Check Log File', key='_CHECKLOGFILE_'), sg.Button('Check Log Table', key='_CHECKLOGTABLE_')],
                     [sg.Button('Convert', key='_CONVERT_'),
                      sg.Exit()]]
 
@@ -137,29 +144,34 @@ def main():
     # ########################################
     # initialize main screen window
     sg.SetOptions(element_padding=(2, 2))
-    window = sg.Window('Project Log App', background_color=mediumblue,
+    mainwindow = sg.Window('Project Log App', background_color=mediumblue,
             default_element_size=(15, 1)).Layout(mainscreenlayout)
-    window.Finalize()
-    window.Refresh()
-
+    mainwindow.Finalize()
+    mainwindow.Refresh()
+    
+    # instantiate a ProjectLog
+    mylog = ProjectLog(thelogfile, thelogtable)
+    
     while True:  # Event Loop
-        event, values = window.Read()
+        event, values = mainwindow.Read()
         if event is None or event=="Exit":
             sys.exit(1)
-        # instantiate a ProjectLog
-        mylog = ProjectLog(thelogfile, thelogtable)
 
-        if mylog.verifylogfile() is None:
-            thelogtable = sg.Popup('ERROR: Could not connect to the database')
-            break
-
-        if not mylog.verifytable():
-            if thelogtable=='Cancel' or thelogtable==None:
+        if event == '_CHECKLOGFILE_':
+            if mylog.verifylogfile() is None:
+                thelogtable = sg.Popup('ERROR: Could not connect to the database')
                 break
+        if event == '_CHECKLOGTABLE_':
+            if not mylog.verifytable():
+                if thelogtable == 'Cancel' or thelogtable is None:
 
-            sg.Popup('ERROR: the table does not exist')
-            sg.POPUP_BUTTONS_OK_CANCEL('Exit or Cancel')
-            sg.PopupGetText('Enter a tablename or Cancel to exit the program.')
+
+                # sg.Popup('ERROR: the table does not exist')
+                sg.POPUP_BUTTONS_OK_CANCEL('Enter a tablename or Cancel to exit the program.')
+                # sg.PopupGetText('Enter a tablename or Cancel to exit the program.')
+                    break
+            else:
+                sg.Popup('Table is OK.')
 
 
 

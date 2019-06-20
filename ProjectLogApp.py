@@ -14,8 +14,10 @@ import PySimpleGUI as sg
 import sqlite3
 from sqlite3 import Error
 
-thelogfile = 'c:\\Users\\imlay\\Dowloads\\ProjectLog.db'  # Default log file
-thelogtable = 'LogEntries'  # Default tablename
+# thelogfilehome = 'C:\Users\imlay\Downloads\ProjectLog.db'
+
+thelogfile = 'c:/Users/imlay/Downloads/ProjectLog2.db'  # Default log file
+thelogtable = 'LogEntries2'  # Default tablename
 lightblue = '#b9def4'  # color used by PySimpleGUI
 mediumblue = '#d2d2df'  # color used by PySimpleGUI
 mediumblue2 = '#534aea'  # color used by PySimpleGUI
@@ -42,7 +44,7 @@ class ProjectLog:
 
     def verifylogfile(self):  # returns a connection object or None if it can't connect
         if not os.path.isfile(self.logfile):
-            sg.Popup('No Database File Found', keep_on_top=True)
+            # sg.Popup('No Database File Found', keep_on_top=True)
             return None
         try:
             conn = sqlite3.connect(self.logfile)
@@ -60,14 +62,18 @@ class ProjectLog:
 
                 sql2 = "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%s' ;" % self.table
 
+                print('sql2 => ', sql2)
                 curr = conn.cursor()
                 curr.execute(sql2)
 
                 thetablename = curr.fetchall()
+                print('thetablename =>', thetablename)
 
                 if len(thetablename)==0:
+                    # print('len(tablename) == 0')
                     return False
                 else:
+                    # print('len(tablename) != 0')
                     return True
             except Error as e:
                 print(e)
@@ -125,10 +131,16 @@ class ProjectLog:
         pass
 
 
+def setmessage(window, message):
+    window.FindElement('_MESSAGEAREA_').Update(message)
+    window.Refresh()
+
+
+fileinfo = thelogfile + '  |  ' + thelogtable
 # Define the mainscreen layout using the above layouts
 mainscreenlayout = [[sg.Text('Message Area', size=(131, 1), key='_MESSAGEAREA_')],
                     [sg.Button('Convert', key='_CONVERT_'),
-                     sg.Exit()]]
+                     sg.Exit(), sg.Text(fileinfo, key='_FILEINFO_')]]
 
 def main():
     global thelogfile
@@ -142,25 +154,58 @@ def main():
     window.Finalize()
     window.Refresh()
 
+    # instantiate a ProjectLog
+    mylog = ProjectLog(thelogfile, thelogtable)
+
     while True:  # Event Loop
         event, values = window.Read()
         if event is None or event=="Exit":
             sys.exit(1)
-        # instantiate a ProjectLog
-        mylog = ProjectLog(thelogfile, thelogtable)
 
         if mylog.verifylogfile() is None:
-            thelogtable = sg.Popup('ERROR: Could not connect to the database')
-            break
+            sg.Popup('ERROR: Could not open the logfile')
+            logfile = sg.PopupGetFile('Enter a logfile')
+            print('logfile => ', logfile)
+
+            if logfile is None or len(logfile)==0:
+                print('logfile not found')
+                break
+            else:
+                mylog.logfile = logfile
+                print('mylog.table => ', mylog.table)
+                if not mylog.verifylogfile():
+                    sg.Popup('2nd file verification failed - EXITING Program')
+                    break
+                else:
+                    sg.Popup('Opened the logfile')
+                    fileinfo = mylog.logfile + '  |  ' + mylog.table
+                    window.FindElement('_FILEINFO_').Update(fileinfo)
+                    setmessage(window, fileinfo)
+                    window.Refresh()
+        else:
+            sg.Popup('Opened the logfile')
 
         if not mylog.verifytable():
-            if thelogtable=='Cancel' or thelogtable==None:
+            logtable = sg.PopupGetText('Enter a tablename or Cancel to exit the program.')
+            print('logtable => ', logtable)
+
+            if logtable is None or len(logtable)==0:
+                print('logtable not found')
                 break
-
-            sg.Popup('ERROR: the table does not exist')
-            sg.POPUP_BUTTONS_OK_CANCEL('Exit or Cancel')
-            sg.PopupGetText('Enter a tablename or Cancel to exit the program.')
-
+            else:
+                mylog.table = logtable
+                print('mylog.table => ', mylog.table)
+                if not mylog.verifytable():
+                    sg.Popup('2nd table verification failed - EXITING Program')
+                    break
+                else:
+                    sg.Popup('connected to the table')
+                    fileinfo = mylog.logfile + '  |  ' + mylog.table
+                    window.FindElement('_FILEINFO_').Update(fileinfo)
+                    setmessage(window, fileinfo)
+                    window.Refresh()
+        else:
+            sg.Popup('connected to the table')
 
 
 if __name__=="__main__":

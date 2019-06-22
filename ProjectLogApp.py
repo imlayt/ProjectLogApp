@@ -21,11 +21,16 @@ thelogtable = 'LogEntries'  # Default tablename
 lightblue = '#b9def4'  # color used by PySimpleGUI
 mediumblue = '#d2d2df'  # color used by PySimpleGUI
 mediumblue2 = '#534aea'  # color used by PySimpleGUI
+mediumgreen = '#66b3b3'  # color used by PySimpleGUI
 
 recordlist = []  # list of records for the selector listbox
 
 class ProjectLog:
     def __init__(self, logfile, table='LogEntries'):
+        '''
+        :param logfile:
+        :param table:
+        '''
         self.logfile = logfile
         self.table = table
         id = 0  # record key
@@ -34,10 +39,10 @@ class ProjectLog:
         shortdescription = ''  # short description for reporting
         longdescription = ''  # optional detailed description
         probability = 0.0  # likely hood of a risk
-        impact = 0.0  # impact to the project of the risk or issue
+        severity = 0.0  # impact to the project of the risk or issue
         complexity = 0.0  # complexity multiplier for Risks and issues
         criticality = 0.0  # criticality multiplier for Risks and Issues
-        exposure = 0.0  # calculated exposure of the project based on probability, impact, complexity and criticality
+        exposure = 0.0  # calculated exposure of the project based on probability, severity, complexity and criticality
         owner = ''  # Person accountable for mitigating the risk, remediating the issue, etc.
         startdate = ''  # Planned date for starting the mitigation/remediation
         duedate = ''  # Target finish date for mitigation/remediation
@@ -46,6 +51,9 @@ class ProjectLog:
         notes = ''  # General notes about the log item
 
     def verifylogfile(self):  # returns a connection object or None if it can't connect
+        '''
+        :return: returns a connection object or None if it can't connect
+        '''
         if not os.path.isfile(self.logfile):
             # sg.Popup('No Database File Found', keep_on_top=True)
             return None
@@ -59,18 +67,21 @@ class ProjectLog:
             return None
 
     def verifytable(self):  # returns True if the table exists, otherwise False
+        '''
+        :return: returns True if the table exists, otherwise False
+        '''
         if os.path.isfile(self.logfile):
             try:
                 conn = sqlite3.connect(self.logfile)
 
                 sql2 = "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%s' ;" % self.table
 
-                print('sql2 => ', sql2)
+                # print('sql2 => ', sql2)
                 curr = conn.cursor()
                 curr.execute(sql2)
 
                 thetablename = curr.fetchall()
-                print('thetablename =>', thetablename)
+                # print('thetablename =>', thetablename)
 
                 if len(thetablename)==0:
                     # print('len(tablename) == 0')
@@ -87,6 +98,9 @@ class ProjectLog:
             return False
 
     def createtable(self):  # return True if the table is created, else return False
+        '''
+        :return: return True if the table is created, else return False
+        '''
         create_query = '''
             CREATE TABLE "LogEntries" (
     "ID"    INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,7 +109,7 @@ class ProjectLog:
     "ShortDescription"	TEXT NOT NULL,
     "LongDescription"	TEXT,
     "Probability"	REAL,
-    "Impact"	REAL,
+    "Severity"	REAL,
     "Complexity"	REAL,
     "Criticality"	REAL,
     "Exposure"	REAL,
@@ -116,10 +130,51 @@ class ProjectLog:
             return False
 
     def addlogentry(self, valuelist):  # returns the ID value if the addition was successful else returns None
+        '''
+        :param valuelist:
+        :return: the ID value if the addition was successful else returns None
+        '''
         pass
 
-    def readlogentry(self):  # returns a log record
-        pass
+    def readlogentry(self, recordid):  # returns a log record or None
+        '''
+        :param recordid:
+        :return: log record or None
+        '''
+
+        readquery = 'SELECT * from %s WHERE ID IS ?' % self.table
+        # print('readquery => ', readquery)
+        try:
+            conn = sqlite3.connect(self.logfile)
+            # print('conn succeeded')
+            curr = conn.cursor()
+            # print('curr creation succeeded')
+            curr.execute(readquery, [recordid, ])
+            # print('curr.execute succeeded')
+            therecords = curr.fetchall()
+            # print('therecords => ', therecords)
+            return therecords
+        except:
+            sg.Popup('readlogentry FAILED(', readquery, ')', keep_on_top=True)
+            return False
+
+    def readlogentries(self, searchquery):  # returns a list of log records
+        '''
+        :param searchquery:
+        :return: returns a list of log records
+        '''
+        searchquery = searchquery.replace('thetable', self.table)
+        # print('searchquery => ', searchquery)
+        try:
+            conn = sqlite3.connect(self.logfile)
+            curr = conn.cursor()
+            curr.execute(searchquery)
+            therecords = curr.fetchall()
+            return therecords
+        except:
+            sg.Popup('Creating table FAILED(', self.table, ')', keep_on_top=True)
+            return False
+
 
     def updatelogentry(self, logidvalue, valuelist):  # returns True if the update was successful
         pass
@@ -130,17 +185,65 @@ class ProjectLog:
     def findlogentry(self, field, searchvalue):  # returns a log record
         pass
 
-    def reportlogentries(self, searchquery):  # returns a list of log records
-        pass
-
 
 def setmessage(window, message):
+    '''
+    :param window:
+    :param message:
+    :return:
+    '''
     window.FindElement('_MESSAGEAREA_').Update(message)
     window.Refresh()
 
 
-def fillrecordselector(window, fieldkey, valuelist):
-    pass
+def fillformfields(window, therecords):
+    '''
+
+    :param window:
+    :param therecords:
+    :return: True if all fields were filled else return false
+    '''
+    # print('therecords =>', therecords)
+    # print('therecords[0][1] =>', therecords[0][1])
+    try:
+        window.FindElement('_CURRENTRECORD_').Update(therecords[0][0])
+        window.FindElement('_LOGITEMTYPE_').Update(therecords[0][1])
+        window.FindElement('_TITLE_').Update(therecords[0][2])
+        window.FindElement('_SHORTDESC_').Update(therecords[0][3])
+        window.FindElement('_LONGDESC_').Update(therecords[0][4])
+        window.FindElement('_PROBABILITY_').Update(therecords[0][5])
+        window.FindElement('_SEVERITY_').Update(therecords[0][6])
+        window.FindElement('_COMPLEXITY_').Update(therecords[0][7])
+        window.FindElement('_CRITICALITY_').Update(therecords[0][8])
+        window.FindElement('_EXPOSURE_').Update(therecords[0][9])
+        window.FindElement('_OWNER_').Update(therecords[0][10])
+        window.FindElement('_STARTDATE_').Update(therecords[0][11])
+        window.FindElement('_DUEDATE_').Update(therecords[0][12])
+        window.FindElement('_WORKSTREAM_').Update(therecords[0][13])
+        window.FindElement('_PROJECT_').Update(therecords[0][14])
+        window.FindElement('_NOTES_').Update(therecords[0][15])
+        window.Refresh()
+        return True
+    except:
+        sg.Popup('fillformfieldw FAILED')
+        return False
+
+
+def fillrecordselector(window, listboxkey, log):
+    '''
+    :param window:
+    :param log:
+    :return: Record count if successful, else None
+    '''
+    searchquery = 'select ID, Title, LogType, Owner, Workstream, Project, StartDate, DueDate FROM thetable ORDER BY Title'
+    # print('searchquery =>', searchquery)
+    listofrecords = log.readlogentries(searchquery)
+    if listofrecords is None:
+        return False
+    else:
+        window.FindElement(listboxkey).Update(listofrecords)
+        window.Refresh()
+        return len(listofrecords)
 
 
 maincolumn1 = [[sg.Text('Title', size=(15, 1), justification='right'), sg.Multiline(size=(40, 3), key='_TITLE_')],
@@ -162,26 +265,28 @@ maincolumn2 = [[sg.Text('Log Item Type', size=(15, 1), justification='right'),
                [sg.Text('Severity', size=(15, 1), justification='right'), sg.InputText(size=(20, 1), key='_SEVERITY_')],
                [sg.Text('Complexity', size=(15, 1), justification='right'),
                 sg.InputText(size=(20, 1), key='_COMPLEXITY_')],
+               [sg.Text('Criticality', size=(15, 1), justification='right'),
+                sg.InputText(size=(20, 1), key='_CRITICALITY_')],
                [sg.Text('Exposure', size=(15, 1), justification='right'), sg.InputText(size=(20, 1), key='_EXPOSURE_')]
                ]
 
 maincolumn3 = [[sg.Text('Owner', justification='right', size=(15, 1)), sg.InputText(size=(20, 1), key='_OWNER_')],
-               [sg.Text('tbd', justification='right', size=(15, 1)), sg.InputText(size=(20, 1), key='_TBD_')],
-               [sg.Text('Start', justification='right', size=(15, 1)), sg.InputText(size=(20, 1), key='_START_'),
-                sg.CalendarButton('Cal', target='_START_')],
+               [sg.Text('Start', justification='right', size=(15, 1)), sg.InputText(size=(20, 1), key='_STARTDATE_'),
+                sg.CalendarButton('Cal', target='_STARTDATE_')],
                [sg.Text('Due Date', justification='right', size=(15, 1)), sg.InputText(size=(20, 1), key='_DUEDATE_'),
                 sg.CalendarButton('Cal', target='_DUEDATE_')],
                ]
 
-maincolumn4 = [[sg.Column(maincolumn2, background_color=mediumblue),
-                sg.Column(maincolumn3, background_color=mediumblue)],
-               [sg.Text('Record Selector', justification='center', size=(60, 1))],
-               [sg.Listbox(values=recordlist, size=(87, 8), key='_RECORDSELECTOR_')]
+maincolumn4 = [[sg.Column(maincolumn2, background_color=mediumgreen),
+                sg.Column(maincolumn3, background_color=lightblue)],
+               [sg.Text('Record Selector', justification='center', size=(56, 1)),
+                sg.Text('Cuurent Record'), sg.InputText(size=(10, 1), key='_CURRENTRECORD_')],
+               [sg.Listbox(values=recordlist, size=(87, 8), key='_RECORDSELECTOR_', enable_events=True)]
                ]
 
 fileinfo = thelogfile + '  |  ' + thelogtable
 # Define the mainscreen layout using the above layouts
-mainscreenlayout = [[sg.Column(maincolumn1, background_color=lightblue),
+mainscreenlayout = [[sg.Column(maincolumn1, background_color=mediumgreen),
                      sg.Column(maincolumn4, background_color=mediumblue2)],
                     [sg.Text('Message Area', size=(131, 1), key='_MESSAGEAREA_')],
                     [sg.Button('Add New', key='_ADDNEW_'),
@@ -249,9 +354,12 @@ def main():
     # else:
     # sg.Popup('connected to the table')
 
-    if fillrecordselector(window, 'fieldkey', 'valuelist'):
-        sg.Popup('fillrecordselector SUCCEDED')
-        # pop the list and load the first record into the input boxes
+    if fillrecordselector(window, '_RECORDSELECTOR_', mylog):
+        # sg.Popup('fillrecordselector SUCCEEDED')
+        setmessage(window, 'fillrecordselector SUCCEEDED')
+        # load the first record into the input boxes
+        therecords = mylog.readlogentry(1)
+        fillformfields(window, therecords)
     else:
         sg.Popup('fillrecordselector FAILED')
         # sys.exit(1)
@@ -272,6 +380,14 @@ def main():
 
         if event=='_FILEINFO_':
             sg.Popup('File Info Button')
+
+        if event=='_RECORDSELECTOR_':
+            recordid = values['_RECORDSELECTOR_'][0][0]
+            setmessage(window, 'recordid => ' + str(recordid))
+            window.Refresh()
+            therecords = mylog.readlogentry(recordid)
+            fillformfields(window, therecords)
+
 
 
 if __name__=="__main__":

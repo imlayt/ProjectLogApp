@@ -84,26 +84,26 @@ class ProjectLog:
             return False
 
     def createtable(self):  # return True if the table is created, else return False
-        try:
-            create_query = '''
+        create_query = '''
             CREATE TABLE "LogEntries" (
     "ID"    INTEGER PRIMARY KEY AUTOINCREMENT,
-    "LogType"  TEXT NOT NULL,
+    "LogType"	TEXT NOT NULL,
     "Title"	TEXT NOT NULL,
-    "ShortDescription"  TEXT NOT NULL,
-    "LongDescription"   TEXT,
+    "ShortDescription"	TEXT NOT NULL,
+    "LongDescription"	TEXT,
     "Probability"	REAL,
     "Impact"	REAL,
     "Complexity"	REAL,
+    "Criticality"	REAL,
     "Exposure"	REAL,
     "Owner"	TEXT NOT NULL,
     "StartDate"	TEXT,
     "DueDate"	TEXT NOT NULL,
     "Workstream"	TEXT,
     "Project"	TEXT,
-    "Notes"	TEXT );
-            '''
+    "Notes"	TEXT ); '''
 
+        try:
             conn = sqlite3.connect(self.logfile)
             curr = conn.cursor()
             curr.execute(create_query)
@@ -136,11 +136,41 @@ def setmessage(window, message):
     window.Refresh()
 
 
+maincolumn1 = [[sg.Text('Title', size=(15, 1), justification='right'), sg.Multiline(size=(40, 3), key='_TITLE_')],
+               [sg.Text('Short Desc.', size=(15, 1), justification='right'),
+                sg.Multiline(size=(40, 3), key='_SHORTDESC_')],
+               [sg.Text('Long Desc.', size=(15, 1), justification='right'),
+                sg.Multiline(size=(40, 3), key='_LONGDESC_')],
+               [sg.Text('Notes', size=(15, 1), justification='right'), sg.Multiline(size=(40, 3), key='_NOTES_')]]
+
+maincolumn2 = [[sg.Text('Log Item Type', size=(15, 1), justification='right'),
+                sg.InputText(size=(20, 1), key='_LOGITEMTYPE_')],
+               [sg.Text('Probability', size=(15, 1), justification='right'),
+                sg.InputText(size=(20, 1), key='_PROBABILITY_')],
+               [sg.Text('Severity', size=(15, 1), justification='right'), sg.InputText(size=(20, 1), key='_SEVERITY_')],
+               [sg.Text('Complexity', size=(15, 1), justification='right'),
+                sg.InputText(size=(20, 1), key='_COMPLEXITY_')],
+               [sg.Text('Exposure', size=(15, 1), justification='right'), sg.InputText(size=(20, 1), key='_EXPOSURE_')],
+               [sg.Text('Log Item Type', size=(15, 1), justification='right'),
+                sg.InputText(size=(20, 1), key='_LOGITEMTYPE_')],
+               ]
+
+maincolumn3 = [[sg.Text('Owner', justification='right', size=(15, 1)), sg.InputText(size=(20, 1), key='_OWNER_')],
+               [sg.Text('Owner', justification='right', size=(15, 1)), sg.InputText(size=(20, 1), key='_OWNER_')],
+               [sg.Text('Start', justification='right', size=(15, 1)), sg.InputText(size=(20, 1), key='_START_')],
+               [sg.Text('Due Date', justification='right', size=(15, 1)), sg.InputText(size=(20, 1), key='_DUEDATE_')],
+
+               ]
 fileinfo = thelogfile + '  |  ' + thelogtable
 # Define the mainscreen layout using the above layouts
-mainscreenlayout = [[sg.Text('Message Area', size=(131, 1), key='_MESSAGEAREA_')],
-                    [sg.Button('Convert', key='_CONVERT_'),
-                     sg.Exit(), sg.Text(fileinfo, key='_FILEINFO_')]]
+mainscreenlayout = [[sg.Column(maincolumn1, background_color=mediumblue),
+                     sg.Column(maincolumn2, background_color=mediumblue),
+                     sg.Column(maincolumn3, background_color=mediumblue)],
+                    [sg.Text('Message Area', size=(131, 1), key='_MESSAGEAREA_')],
+                    [sg.Button('Add New', key='_ADDNEW_'),
+                     sg.Button('Save Changes', key='_SAVECHANGES_'),
+                     sg.Button('Cancel', key='_CANCEL_')],
+                    [sg.Exit(), sg.Text(fileinfo, key='_FILEINFO_')]]
 
 def main():
     global thelogfile

@@ -177,7 +177,45 @@ class ProjectLog:
 
 
     def updatelogentry(self, logidvalue, valuelist):  # returns True if the update was successful
-        pass
+        '''
+        :param logidvalue:
+        :param valuelist:
+        :return: returns True if the update was successful
+        '''
+        # UPDATE table_name SET column_name=new_value [, ...] WHERE expression
+        updatesql = '''
+            UPDATE LogEntries SET 
+            LogType=?, 
+            Title=?, 
+            ShortDescription=?, 
+            LongDescription=?, 
+            Probability=?, 
+            Severity=?, 
+            Complexity=?, 
+            Criticality=?, 
+            Exposure=?, 
+            Owner=?, 
+            StartDate=?, 
+            DueDate=?, 
+            Workstream=?, 
+            Project=?, 
+            Notes=?
+            WHERE ID = ?
+                    ); '''
+
+        sqlite3.enable_callback_tracebacks(True)
+        try:
+            conn = sqlite3.connect(self.logfile)
+            print('conn succeeded')
+            curr = conn.cursor()
+            print('curr creation succeeded')
+            print('updatesql =>', updatesql)
+            curr.execute(updatesql, valuelist)
+            print('curr.execute succeeded')
+            return True
+        except:
+            print('updatelogentry FAILED(', valuelist, ')')
+            return False
 
     def deletelogentry(self, logidvalue):  # returns True if the record was deleted
         pass
@@ -225,8 +263,40 @@ def fillformfields(window, therecords):
         window.Refresh()
         return True
     except:
-        sg.Popup('fillformfieldw FAILED')
+        sg.Popup('fillformfield FAILED')
         return False
+
+
+def getrecordvalues(values):
+    '''
+    :param window: 
+    :return: list with all record values from the window 
+    '''
+    # print('get record values =>', values)
+    # print('valuelist[0][1] =>', valuelist[0][1])
+    valuelist = []
+    # try:
+    valuelist.append(values['_LOGITEMTYPE_'])
+    valuelist.append(values['_TITLE_'])
+    valuelist.append(values['_SHORTDESC_'])
+    valuelist.append(values['_LONGDESC_'])
+    valuelist.append(values['_PROBABILITY_'])
+    valuelist.append(values['_SEVERITY_'])
+    valuelist.append(values['_COMPLEXITY_'])
+    valuelist.append(values['_CRITICALITY_'])
+    valuelist.append(values['_EXPOSURE_'])
+    valuelist.append(values['_OWNER_'])
+    valuelist.append(values['_STARTDATE_'])
+    valuelist.append(values['_DUEDATE_'])
+    valuelist.append(values['_WORKSTREAM_'])
+    valuelist.append(values['_PROJECT_'])
+    valuelist.append(values['_NOTES_'])
+    valuelist.append(values['_CURRENTRECORD_'])
+    print('valulist =>', valuelist)
+    return valuelist
+    # except:
+    #     sg.Popup('could not fill the record list')
+
 
 
 def fillrecordselector(window, listboxkey, log):
@@ -373,7 +443,13 @@ def main():
             sg.Popup('Add New Button')
 
         if event=='_SAVECHANGES_':
-            sg.Popup('Save Changes Button')
+            # update the table with th current values
+            valuelist = getrecordvalues(values)
+            if mylog.updatelogentry(values['_CURRENTRECORD_'], valuelist):
+                therecords = mylog.readlogentry(values['_CURRENTRECORD_'])
+                fillformfields(window, therecords)
+            else:
+                sg.Popup('Save Changes FAILED')
 
         if event=='_CANCEL_':
             sg.Popup('Cancel Button')

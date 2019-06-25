@@ -376,12 +376,13 @@ def fillrecordselector(window, listboxkey, log):
     :param log:
     :return: Record count if successful, else None
     '''
-    searchquery = 'select ID, Title, LogType, Owner, Workstream, Project, StartDate, DueDate FROM thetable ORDER BY Title'
+    searchquery = 'select LogType, ID, Title, Owner, Workstream, Project FROM thetable ORDER BY LogType'
     # print('searchquery =>', searchquery)
     listofrecords = log.readlogentries(searchquery)
     if listofrecords is None:
         return False
     else:
+        # print('listofrecords =>', listofrecords)
         window.FindElement(listboxkey).Update(listofrecords)
         window.Refresh()
         return len(listofrecords)
@@ -429,12 +430,13 @@ fileinfo = thelogfile + '  |  ' + thelogtable
 # Define the mainscreen layout using the above layouts
 mainscreenlayout = [[sg.Column(maincolumn1, background_color=mediumgreen),
                      sg.Column(maincolumn4, background_color=mediumblue2)],
-                    [sg.Text('Message Area', size=(131, 1), key='_MESSAGEAREA_')],
+                    [sg.Text('Message Area', size=(134, 1), key='_MESSAGEAREA_')],
                     [sg.Button('New Log Entry', key='_NEW_'),
-                     sg.Button('Save New', key='_ADDNEW_'),
+                     sg.Button('Save New', key='_ADDNEW_', disabled=True),
                      sg.Button('Save Changes', key='_SAVECHANGES_'),
                      sg.Button('Cancel', key='_CANCEL_')],
-                    [sg.Exit(), sg.Text(fileinfo, key='_FILEINFO_')]]
+                    [sg.Text(fileinfo, key='_FILEINFO_', size=(134, 1), justification='center'), sg.Exit()]
+                    ]
 
 def main():
     global thelogfile
@@ -497,7 +499,6 @@ def main():
     # sg.Popup('connected to the table')
 
     if fillrecordselector(window, '_RECORDSELECTOR_', mylog):
-        # sg.Popup('fillrecordselector SUCCEEDED')
         setmessage(window, 'fillrecordselector SUCCEEDED')
         # load the first record into the input boxes
         therecords = mylog.readlogentry(1)
@@ -513,19 +514,20 @@ def main():
 
         if event=='_NEW_':
             clearformfields(window)
+            window.FindElement('_ADDNEW_').Update(disabled=False)
+            window.FindElement('_SAVECHANGES_').Update(disabled=True)
 
         if event=='_ADDNEW_':
             # Add the current values as a new record
             valuelist = getrecordvalues(values, False)
             if mylog.addlogentry(valuelist):
-                therecords = mylog.readlogentry(values['_CURRENTRECORD_'])
-                # fillformfields(window, therecords)
-                recordid = values['_RECORDSELECTOR_'][0][0]
-                setmessage(window, 'recordid => ' + str(recordid))
-                therecords = mylog.readlogentry(recordid)
+                therecords = mylog.readlogentry(1)
                 fillformfields(window, therecords)
                 if fillrecordselector(window, '_RECORDSELECTOR_', mylog):
+                    window.FindElement('_ADDNEW_').Update(disabled=True)
+                    window.FindElement('_SAVECHANGES_').Update(disabled=False)
                     window.Refresh()
+
             else:
                 sg.Popup('Save New Logentry FAILED')
 
@@ -535,7 +537,7 @@ def main():
             if mylog.updatelogentry(values['_CURRENTRECORD_'], valuelist):
                 therecords = mylog.readlogentry(values['_CURRENTRECORD_'])
                 # fillformfields(window, therecords)
-                recordid = values['_RECORDSELECTOR_'][0][0]
+                recordid = values['_RECORDSELECTOR_'][0][1]
                 setmessage(window, 'recordid => ' + str(recordid))
                 therecords = mylog.readlogentry(recordid)
                 fillformfields(window, therecords)
@@ -552,7 +554,7 @@ def main():
             sg.Popup('File Info Button')
 
         if event=='_RECORDSELECTOR_':
-            recordid = values['_RECORDSELECTOR_'][0][0]
+            recordid = values['_RECORDSELECTOR_'][0][1]
             setmessage(window, 'recordid => ' + str(recordid))
             window.Refresh()
             therecords = mylog.readlogentry(recordid)

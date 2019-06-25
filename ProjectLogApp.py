@@ -129,12 +129,46 @@ class ProjectLog:
             sg.Popup('Creating table FAILED(', self.table, ')', keep_on_top=True)
             return False
 
-    def addlogentry(self, valuelist):  # returns the ID value if the addition was successful else returns None
+    def addlogentry(self, valuelist):  # returns the ID value if addition was successful else returns None
         '''
         :param valuelist:
         :return: the ID value if the addition was successful else returns None
         '''
-        pass
+        insertsql = '''
+                    INSERT INTO LogEntries( 
+                    LogType, 
+                    Title, 
+                    ShortDescription, 
+                    LongDescription, 
+                    Probability, 
+                    Severity, 
+                    Complexity, 
+                    Criticality, 
+                    Exposure, 
+                    Owner, 
+                    StartDate, 
+                    DueDate, 
+                    Workstream, 
+                    Project, 
+                    Notes)
+                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ; '''
+
+        try:
+            conn = sqlite3.connect(self.logfile)
+            # print('conn succeeded')
+            curr = conn.cursor()
+            # print('curr creation succeeded')
+            # print('insertsql =>', insertsql)
+            curr.execute(insertsql, valuelist)
+            # commit the changes
+            conn.commit()
+            # print('curr.execute succeeded')
+            return True
+        except Error as e:
+            print(e)
+            print('addlogentry FAILED(', valuelist, ')')
+            return False
 
     def readlogentry(self, recordid):  # returns a log record or None
         '''
@@ -175,7 +209,6 @@ class ProjectLog:
             sg.Popup('Creating table FAILED(', self.table, ')', keep_on_top=True)
             return False
 
-
     def updatelogentry(self, logidvalue, valuelist):  # returns True if the update was successful
         '''
         :param logidvalue:
@@ -201,19 +234,21 @@ class ProjectLog:
             Project=?, 
             Notes=?
             WHERE ID = ?
-                    ); '''
+                    ; '''
 
-        sqlite3.enable_callback_tracebacks(True)
         try:
             conn = sqlite3.connect(self.logfile)
-            print('conn succeeded')
+            # print('conn succeeded')
             curr = conn.cursor()
-            print('curr creation succeeded')
-            print('updatesql =>', updatesql)
+            # print('curr creation succeeded')
+            # print('updatesql =>', updatesql)
             curr.execute(updatesql, valuelist)
-            print('curr.execute succeeded')
+            # commit the changes
+            conn.commit()
+            # print('curr.execute succeeded')
             return True
-        except:
+        except Error as e:
+            print(e)
             print('updatelogentry FAILED(', valuelist, ')')
             return False
 
@@ -263,11 +298,44 @@ def fillformfields(window, therecords):
         window.Refresh()
         return True
     except:
-        sg.Popup('fillformfield FAILED')
+        sg.Popup('fillformfields FAILED')
         return False
 
 
-def getrecordvalues(values):
+def clearformfields(window):
+    '''
+
+    :param window:
+    :param therecords:
+    :return: True if all fields were filled else return false
+    '''
+    # print('therecords =>', therecords)
+    # print('therecords[0][1] =>', therecords[0][1])
+    try:
+        window.FindElement('_CURRENTRECORD_').Update('')
+        window.FindElement('_LOGITEMTYPE_').Update('')
+        window.FindElement('_TITLE_').Update('')
+        window.FindElement('_SHORTDESC_').Update('')
+        window.FindElement('_LONGDESC_').Update('')
+        window.FindElement('_PROBABILITY_').Update('')
+        window.FindElement('_SEVERITY_').Update('')
+        window.FindElement('_COMPLEXITY_').Update('')
+        window.FindElement('_CRITICALITY_').Update('')
+        window.FindElement('_EXPOSURE_').Update('')
+        window.FindElement('_OWNER_').Update('')
+        window.FindElement('_STARTDATE_').Update('')
+        window.FindElement('_DUEDATE_').Update('')
+        window.FindElement('_WORKSTREAM_').Update('')
+        window.FindElement('_PROJECT_').Update('')
+        window.FindElement('_NOTES_').Update('')
+        window.Refresh()
+        return True
+    except:
+        sg.Popup('clearformfields FAILED')
+        return False
+
+
+def getrecordvalues(values, includerecid=True):
     '''
     :param window: 
     :return: list with all record values from the window 
@@ -291,8 +359,11 @@ def getrecordvalues(values):
     valuelist.append(values['_WORKSTREAM_'])
     valuelist.append(values['_PROJECT_'])
     valuelist.append(values['_NOTES_'])
-    valuelist.append(values['_CURRENTRECORD_'])
-    print('valulist =>', valuelist)
+
+    if includerecid:
+        valuelist.append(values['_CURRENTRECORD_'])
+
+    # print('valulist =>', valuelist)
     return valuelist
     # except:
     #     sg.Popup('could not fill the record list')
@@ -359,7 +430,8 @@ fileinfo = thelogfile + '  |  ' + thelogtable
 mainscreenlayout = [[sg.Column(maincolumn1, background_color=mediumgreen),
                      sg.Column(maincolumn4, background_color=mediumblue2)],
                     [sg.Text('Message Area', size=(131, 1), key='_MESSAGEAREA_')],
-                    [sg.Button('Add New', key='_ADDNEW_'),
+                    [sg.Button('New Log Entry', key='_NEW_'),
+                     sg.Button('Save New', key='_ADDNEW_'),
                      sg.Button('Save Changes', key='_SAVECHANGES_'),
                      sg.Button('Cancel', key='_CANCEL_')],
                     [sg.Exit(), sg.Text(fileinfo, key='_FILEINFO_')]]
@@ -439,20 +511,42 @@ def main():
         if event is None or event=="Exit":
             sys.exit(1)
 
+        if event=='_NEW_':
+            clearformfields(window)
+
         if event=='_ADDNEW_':
-            sg.Popup('Add New Button')
+            # Add the current values as a new record
+            valuelist = getrecordvalues(values, False)
+            if mylog.addlogentry(valuelist):
+                therecords = mylog.readlogentry(values['_CURRENTRECORD_'])
+                # fillformfields(window, therecords)
+                recordid = values['_RECORDSELECTOR_'][0][0]
+                setmessage(window, 'recordid => ' + str(recordid))
+                therecords = mylog.readlogentry(recordid)
+                fillformfields(window, therecords)
+                if fillrecordselector(window, '_RECORDSELECTOR_', mylog):
+                    window.Refresh()
+            else:
+                sg.Popup('Save New Logentry FAILED')
 
         if event=='_SAVECHANGES_':
             # update the table with th current values
             valuelist = getrecordvalues(values)
             if mylog.updatelogentry(values['_CURRENTRECORD_'], valuelist):
                 therecords = mylog.readlogentry(values['_CURRENTRECORD_'])
+                # fillformfields(window, therecords)
+                recordid = values['_RECORDSELECTOR_'][0][0]
+                setmessage(window, 'recordid => ' + str(recordid))
+                therecords = mylog.readlogentry(recordid)
                 fillformfields(window, therecords)
+                if fillrecordselector(window, '_RECORDSELECTOR_', mylog):
+                    window.Refresh()
             else:
                 sg.Popup('Save Changes FAILED')
 
         if event=='_CANCEL_':
-            sg.Popup('Cancel Button')
+            sys.exit(23)
+            # sg.Popup('Cancel Button')
 
         if event=='_FILEINFO_':
             sg.Popup('File Info Button')

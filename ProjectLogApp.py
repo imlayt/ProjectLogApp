@@ -22,6 +22,7 @@ lightblue = '#b9def4'  # color used by PySimpleGUI
 mediumblue = '#d2d2df'  # color used by PySimpleGUI
 mediumblue2 = '#534aea'  # color used by PySimpleGUI
 mediumgreen = '#66b3b3'  # color used by PySimpleGUI
+logtypelist = ['Risk', 'Action Item', 'Issue',  'Decision', 'Lesson Learned']
 
 recordlist = []  # list of records for the selector listbox
 
@@ -401,7 +402,7 @@ maincolumn1 = [[sg.Text('Title', size=(15, 1), justification='right'), sg.Multil
                 sg.Multiline(size=(40, 4), key='_NOTES_')]]
 
 maincolumn2 = [[sg.Text('Log Item Type', size=(15, 1), justification='right'),
-                sg.InputText(size=(20, 1), key='_LOGITEMTYPE_')],
+                sg.InputCombo(logtypelist, size=(20, 1), key='_LOGITEMTYPE_')],
                [sg.Text('Probability', size=(15, 1), justification='right'),
                 sg.InputText(size=(20, 1), key='_PROBABILITY_')],
                [sg.Text('Severity', size=(15, 1), justification='right'), sg.InputText(size=(20, 1), key='_SEVERITY_')],

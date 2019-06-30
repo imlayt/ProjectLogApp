@@ -7,4 +7,4 @@ PySimpleGUI is used for the front end. Data is stored in a SQLite database. If t
 
 The create and update features work. To change records, click on the one you want in the record selector box on the right.
 
-This is a learning project form (like so many others here on Git Hub!), any feedback is welcomed.
+This is a learning project for me (like so many others here on GitHub!), any feedback is welcomed.

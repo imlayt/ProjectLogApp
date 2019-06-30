@@ -22,6 +22,7 @@ lightblue = '#b9def4'  # color used by PySimpleGUI
 mediumblue = '#d2d2df'  # color used by PySimpleGUI
 mediumblue2 = '#534aea'  # color used by PySimpleGUI
 mediumgreen = '#66b3b3'  # color used by PySimpleGUI
+mediumgreen2 = '#00aaaa'  # color used by PySimpleGUI
 
 recordlist = []  # list of records for the selector listbox
 tablelist = ['one', '2', 'three', 'four', 'five', 'six']
@@ -480,9 +481,9 @@ def main():
                 window.FindElement('_FILEINFO_').Update(fileinfo)
                 setmessage(window, fileinfo)
                 window.Refresh()
-    # else:
+
     # sg.Popup('connected to the table')
-    sg.ChangeLookAndFeel('GreenTan')  # set the overall color scheme
+    # sg.ChangeLookAndFeel('GreenTan')  # set the overall color scheme
     maincolumn1 = [[sg.Text('Log Item Type', size=(15, 1), justification='right'),
                     sg.InputText(size=(40, 1), key='_LOGITEMTYPE_')],
                    [sg.Text('Title', size=(15, 1), justification='right'), sg.Multiline(size=(40, 3), key='_TITLE_')],
@@ -519,9 +520,10 @@ def main():
                    ]
 
     maincolumn4 = [[sg.Column(maincolumn2, background_color=mediumgreen),
-                    sg.Column(maincolumn3, background_color=lightblue)],
+                    sg.Column(maincolumn3, background_color=mediumgreen)],
                    [sg.Text('Record Selector', justification='center', size=(56, 1)),
-                    sg.Text('Cuurent Record'), sg.InputText(size=(10, 1), key='_CURRENTRECORD_')],
+                    sg.Text('Cuurent Record'),
+                    sg.InputText(size=(10, 1), key='_CURRENTRECORD_', justification='center')],
                    [sg.Listbox(values=recordlist, size=(87, 8), key='_RECORDSELECTOR_', enable_events=True)],
 
                    ]
@@ -536,8 +538,8 @@ def main():
 
     fileinfo = thelogfile + '  |  ' + thelogtable
     # Define the mainscreen layout using the above layouts
-    mainscreenlayout = [[sg.Column(maincolumn1),
-                         sg.Column(maincolumn4)],
+    mainscreenlayout = [[sg.Column(maincolumn1, background_color=mediumgreen),
+                         sg.Column(maincolumn4, background_color=mediumgreen)],
                         [sg.Button('New Log Entry', key='_NEW_'),
                          sg.Button('Save New', key='_ADDNEW_', disabled=True),
                          sg.Button('Save Changes', key='_SAVECHANGES_'),
@@ -550,7 +552,8 @@ def main():
     # ########################################
     # initialize main screen window
     sg.SetOptions(element_padding=(2, 2))
-    window = sg.Window('Project Log App', default_element_size=(15, 1,)).Layout(mainscreenlayout)
+    window = sg.Window('Project Log App', default_element_size=(15, 1,), background_color=mediumgreen2).Layout(
+            mainscreenlayout)
     window.Finalize()
     # window.Refresh()
 

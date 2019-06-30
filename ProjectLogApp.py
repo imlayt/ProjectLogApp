@@ -178,7 +178,7 @@ class ProjectLog:
         :param recordid:
         :return: log record or None
         '''
-
+        readfirstquery = 'SELECT * from %s ORDER BY ROWID ASC LIMIT 1'
         readquery = 'SELECT * from %s WHERE ID IS ?' % self.table
         # print('readquery => ', readquery)
         try:
@@ -193,6 +193,27 @@ class ProjectLog:
             return therecords
         except:
             sg.Popup('readlogentry FAILED(', readquery, ')', keep_on_top=True)
+            return False
+
+    def readfirstlogentry(self):  # returns a log record or None
+        '''
+        :param recordid:
+        :return: log record or None
+        '''
+        readfirstquery = 'SELECT * from LogEntries ORDER BY ROWID ASC LIMIT 1;'
+        # print('readfirstquery => ', readfirstquery)
+        try:
+            conn = sqlite3.connect(self.logfile)
+            # print('conn succeeded')
+            curr = conn.cursor()
+            # print('curr creation succeeded')
+            curr.execute(readfirstquery)
+            # print('curr.execute succeeded')
+            therecords = curr.fetchall()
+            # print('therecords => ', therecords)
+            return therecords
+        except:
+            sg.Popup('readfirstlogentry FAILED(', readfirstquery, ')', keep_on_top=True)
             return False
 
     def readlogentries(self, searchquery):  # returns a list of log records
@@ -261,7 +282,25 @@ class ProjectLog:
             return False
 
     def deletelogentry(self, logidvalue):  # returns True if the record was deleted
-        pass
+        deletesql = '''
+                    DELETE FROM LogEntries
+                    WHERE ID = ?
+                            ; '''
+        try:
+            conn = sqlite3.connect(self.logfile)
+            # print('conn succeeded')
+            curr = conn.cursor()
+            # print('curr creation succeeded')
+            # print('updatesql =>', updatesql)
+            curr.execute(deletesql, logidvalue)
+            # commit the changes
+            conn.commit()
+            # print('curr.execute succeeded')
+            return True
+        except Error as e:
+            print(e)
+            print('deletelogentry FAILED(', logidvalue, ')')
+            return False
 
     def findlogentry(self, field, searchvalue):  # returns a log record
         pass
@@ -284,7 +323,7 @@ def fillformfields(window, therecords):
     :param therecords:
     :return: True if all fields were filled else return false
     '''
-    # print('therecords =>', therecords)
+    # print('fillformfields therecords =>', therecords)
     # print('therecords[0][1] =>', therecords[0][1])
     try:
         window.FindElement('_CURRENTRECORD_').Update(therecords[0][0])
@@ -404,7 +443,7 @@ def fillrecordselector(window, listboxkey, log):
         return len(listofrecords)
 
 
-def table_example(data, header_list):
+def preview_table(data, header_list):
     # filename = sg.PopupGetFile('filename to open', no_window=True, file_types=(("CSV Files","*.csv"),))
     # --- populate table with file contents --- #
 
@@ -417,10 +456,10 @@ def table_example(data, header_list):
             max_col_width=10,
             justification='left',
             display_row_numbers='true',
-            alternating_row_color='lightblue',
+            alternating_row_color='blue',
             num_rows=min(len(data), 10), enable_events=True, key='_EXAMPLETABLE_')]]
 
-    tablewindow = sg.Window('Table', grab_anywhere=False, keep_on_top=True).Layout(layout)
+    tablewindow = sg.Window('Log Entries Table', grab_anywhere=False, keep_on_top=True).Layout(layout)
 
     while True:
         event, values = tablewindow.Read()
@@ -524,7 +563,7 @@ def main():
                    [sg.Text('Record Selector', justification='center', size=(56, 1)),
                     sg.Text('Cuurent Record'),
                     sg.InputText(size=(10, 1), key='_CURRENTRECORD_', justification='center')],
-                   [sg.Listbox(values=recordlist, size=(87, 8), key='_RECORDSELECTOR_', enable_events=True)],
+                   [sg.Listbox(values=recordlist, size=(87, 10), key='_RECORDSELECTOR_', enable_events=True)],
 
                    ]
 
@@ -543,7 +582,8 @@ def main():
                         [sg.Button('New Log Entry', key='_NEW_'),
                          sg.Button('Save New', key='_ADDNEW_', disabled=True),
                          sg.Button('Save Changes', key='_SAVECHANGES_'),
-                         sg.Button('Preview Table', key='_PREVIEWTABLE_')],
+                         sg.Button('Preview Table', key='_PREVIEWTABLE_'),
+                         sg.Button('Delete Log Entry', key='_DELETELOGENTRY_')],
                         [sg.Text('Message Area', size=(134, 1), key='_MESSAGEAREA_', background_color='white')],
                         [sg.Text(fileinfo, key='_FILEINFO_', size=(134, 1), justification='center',
                                 background_color='white'), sg.Exit()]
@@ -560,7 +600,7 @@ def main():
     if fillrecordselector(window, '_RECORDSELECTOR_', mylog):
         setmessage(window, 'fillrecordselector SUCCEEDED')
         # load the first record into the input boxes
-        therecords = mylog.readlogentry(1)
+        therecords = mylog.readfirstlogentry()
         fillformfields(window, therecords)
     else:
         sg.Popup('fillrecordselector FAILED')
@@ -580,7 +620,7 @@ def main():
             # Add the current values as a new record
             valuelist = getrecordvalues(values, False)
             if mylog.addlogentry(valuelist):
-                therecords = mylog.readlogentry(1)
+                therecords = mylog.readfirstlogentry()
                 fillformfields(window, therecords)
                 if fillrecordselector(window, '_RECORDSELECTOR_', mylog):
                     window.FindElement('_ADDNEW_').Update(disabled=True)
@@ -620,9 +660,20 @@ def main():
             fillformfields(window, therecords)
 
         if event=='_PREVIEWTABLE_':
-            print('tablelist =>', tablelist)
-            print('headers =>', headers)
-            table_example(tablelist, headers)
+            # print('tablelist =>', tablelist)
+            # print('headers =>', headers)
+            preview_table(tablelist, headers)
+
+        if event=='_DELETELOGENTRY_':
+            if mylog.deletelogentry(values['_CURRENTRECORD_']):
+                setmessage(window, 'record' + values['_CURRENTRECORD_'] + 'deleted')
+                # load the first record into the input boxes
+                therecords = mylog.readfirstlogentry()
+                fillformfields(window, therecords)
+                if fillrecordselector(window, '_RECORDSELECTOR_', mylog):
+                    window.Refresh()
+            else:
+                setmessage(window, 'record' + values['_CURRENTRECORD_'] + 'WAS NOT deleted')
 
 
 if __name__=="__main__":

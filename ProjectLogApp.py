@@ -24,6 +24,8 @@ mediumblue2 = '#534aea'  # color used by PySimpleGUI
 mediumgreen = '#66b3b3'  # color used by PySimpleGUI
 
 recordlist = []  # list of records for the selector listbox
+tablelist = ['one', '2', 'three', 'four', 'five', 'six']
+headers = ["LogType", "ID", "Title", "Owner", "Workstream", "Project"]
 
 class ProjectLog:
     def __init__(self, logfile, table='LogEntries'):
@@ -197,6 +199,7 @@ class ProjectLog:
         :param searchquery:
         :return: returns a list of log records
         '''
+        therecords = []
         searchquery = searchquery.replace('thetable', self.table)
         # print('searchquery => ', searchquery)
         try:
@@ -204,6 +207,10 @@ class ProjectLog:
             curr = conn.cursor()
             curr.execute(searchquery)
             therecords = curr.fetchall()
+            # for i in range(curr.rowcount):
+            #     rowlist = list(curr.fetchone)
+            #     therecords.append(rowlist)
+            #     print('therecords =>', therecords)
             return therecords
         except:
             sg.Popup('Creating table FAILED(', self.table, ')', keep_on_top=True)
@@ -376,79 +383,57 @@ def fillrecordselector(window, listboxkey, log):
     :param log:
     :return: Record count if successful, else None
     '''
+    global tablelist
+
     searchquery = 'select LogType, ID, Title, Owner, Workstream, Project FROM thetable ORDER BY LogType'
-    # print('searchquery =>', searchquery)
+
     listofrecords = log.readlogentries(searchquery)
+
     if listofrecords is None:
         return False
     else:
-        # print('listofrecords =>', listofrecords)
+        tablelist = []
+        for row in listofrecords:
+            tablelist.append(list(row))
+
         window.FindElement(listboxkey).Update(listofrecords)
+        # window.FindElement('_TABLE_').Update(listofrecords)
         window.Refresh()
+
         return len(listofrecords)
 
 
-maincolumn1 = [[sg.Text('Title', size=(15, 1), justification='right'), sg.Multiline(size=(40, 3), key='_TITLE_')],
-               [sg.Text('Short Desc.', size=(15, 1), justification='right'),
-                sg.Multiline(size=(40, 3), key='_SHORTDESC_')],
-               [sg.Text('Long Desc.(opt)', size=(15, 1), justification='right'),
-                sg.Multiline(size=(40, 3), key='_LONGDESC_')],
-               [sg.Text('Project.', size=(15, 1), justification='right'),
-                sg.InputText(size=(40, 1), key='_PROJECT_')],
-               [sg.Text('Workstream.', size=(15, 1), justification='right'),
-                sg.InputText(size=(40, 1), key='_WORKSTREAM_')],
-               [sg.Text('Notes', size=(15, 1), justification='right'),
-                sg.Multiline(size=(40, 4), key='_NOTES_')]]
+def table_example(data, header_list):
+    # filename = sg.PopupGetFile('filename to open', no_window=True, file_types=(("CSV Files","*.csv"),))
+    # --- populate table with file contents --- #
 
-maincolumn2 = [[sg.Text('Log Item Type', size=(15, 1), justification='right'),
-                sg.InputText(size=(20, 1), key='_LOGITEMTYPE_')],
-               [sg.Text('Probability', size=(15, 1), justification='right'),
-                sg.InputText(size=(20, 1), key='_PROBABILITY_')],
-               [sg.Text('Severity', size=(15, 1), justification='right'), sg.InputText(size=(20, 1), key='_SEVERITY_')],
-               [sg.Text('Complexity', size=(15, 1), justification='right'),
-                sg.InputText(size=(20, 1), key='_COMPLEXITY_')],
-               [sg.Text('Criticality', size=(15, 1), justification='right'),
-                sg.InputText(size=(20, 1), key='_CRITICALITY_')],
-               [sg.Text('Exposure', size=(15, 1), justification='right'), sg.InputText(size=(20, 1), key='_EXPOSURE_')]
-               ]
+    datalist = []
+    for row in data:
+        datalist.append(list(row))
 
-maincolumn3 = [[sg.Text('Owner', justification='right', size=(15, 1)), sg.InputText(size=(20, 1), key='_OWNER_')],
-               [sg.Text('Start', justification='right', size=(15, 1)), sg.InputText(size=(20, 1), key='_STARTDATE_'),
-                sg.CalendarButton('Cal', target='_STARTDATE_')],
-               [sg.Text('Due Date', justification='right', size=(15, 1)), sg.InputText(size=(20, 1), key='_DUEDATE_'),
-                sg.CalendarButton('Cal', target='_DUEDATE_')],
-               ]
+    layout = [[sg.Table(values=datalist,
+            headings=header_list,
+            max_col_width=10,
+            justification='left',
+            display_row_numbers='true',
+            alternating_row_color='lightblue',
+            num_rows=min(len(data), 10), enable_events=True, key='_EXAMPLETABLE_')]]
 
-maincolumn4 = [[sg.Column(maincolumn2, background_color=mediumgreen),
-                sg.Column(maincolumn3, background_color=lightblue)],
-               [sg.Text('Record Selector', justification='center', size=(56, 1)),
-                sg.Text('Cuurent Record'), sg.InputText(size=(10, 1), key='_CURRENTRECORD_')],
-               [sg.Listbox(values=recordlist, size=(87, 8), key='_RECORDSELECTOR_', enable_events=True)]
-               ]
+    tablewindow = sg.Window('Table', grab_anywhere=False, keep_on_top=True).Layout(layout)
 
-fileinfo = thelogfile + '  |  ' + thelogtable
-# Define the mainscreen layout using the above layouts
-mainscreenlayout = [[sg.Column(maincolumn1, background_color=mediumgreen),
-                     sg.Column(maincolumn4, background_color=mediumblue2)],
-                    [sg.Text('Message Area', size=(134, 1), key='_MESSAGEAREA_')],
-                    [sg.Button('New Log Entry', key='_NEW_'),
-                     sg.Button('Save New', key='_ADDNEW_', disabled=True),
-                     sg.Button('Save Changes', key='_SAVECHANGES_'),
-                     sg.Button('Cancel', key='_CANCEL_')],
-                    [sg.Text(fileinfo, key='_FILEINFO_', size=(134, 1), justification='center'), sg.Exit()]
-                    ]
+    while True:
+        event, values = tablewindow.Read()
+        if event is None:
+            break
+        if event=='_EXAMPLETABLE_':
+            sg.Popup('TABLE =>', values['_EXAMPLETABLE_'], keep_on_top=True)
+
+
 
 def main():
     global thelogfile
     global thelogtable
 
-    # ########################################
-    # initialize main screen window
-    sg.SetOptions(element_padding=(2, 2))
-    window = sg.Window('Project Log App', background_color=mediumblue,
-            default_element_size=(15, 1)).Layout(mainscreenlayout)
-    window.Finalize()
-    window.Refresh()
 
     # instantiate a ProjectLog
     mylog = ProjectLog(thelogfile, thelogtable)
@@ -497,6 +482,78 @@ def main():
                 window.Refresh()
     # else:
     # sg.Popup('connected to the table')
+
+    maincolumn1 = [[sg.Text('Title', size=(15, 1), justification='right'), sg.Multiline(size=(40, 3), key='_TITLE_')],
+                   [sg.Text('Short Desc.', size=(15, 1), justification='right'),
+                    sg.Multiline(size=(40, 3), key='_SHORTDESC_')],
+                   [sg.Text('Long Desc.(opt)', size=(15, 1), justification='right'),
+                    sg.Multiline(size=(40, 3), key='_LONGDESC_')],
+                   [sg.Text('Project.', size=(15, 1), justification='right'),
+                    sg.InputText(size=(40, 1), key='_PROJECT_')],
+                   [sg.Text('Workstream.', size=(15, 1), justification='right'),
+                    sg.InputText(size=(40, 1), key='_WORKSTREAM_')],
+                   [sg.Text('Notes', size=(15, 1), justification='right'),
+                    sg.Multiline(size=(40, 4), key='_NOTES_')]]
+
+    maincolumn2 = [[sg.Text('Log Item Type', size=(15, 1), justification='right'),
+                    sg.InputText(size=(20, 1), key='_LOGITEMTYPE_')],
+                   [sg.Text('Probability', size=(15, 1), justification='right'),
+                    sg.InputText(size=(20, 1), key='_PROBABILITY_')],
+                   [sg.Text('Severity', size=(15, 1), justification='right'),
+                    sg.InputText(size=(20, 1), key='_SEVERITY_')],
+                   [sg.Text('Complexity', size=(15, 1), justification='right'),
+                    sg.InputText(size=(20, 1), key='_COMPLEXITY_')],
+                   [sg.Text('Criticality', size=(15, 1), justification='right'),
+                    sg.InputText(size=(20, 1), key='_CRITICALITY_')],
+                   [sg.Text('Exposure', size=(15, 1), justification='right'),
+                    sg.InputText(size=(20, 1), key='_EXPOSURE_')]
+                   ]
+
+    maincolumn3 = [[sg.Text('Owner', justification='right', size=(15, 1)), sg.InputText(size=(20, 1), key='_OWNER_')],
+                   [sg.Text('Start', justification='right', size=(15, 1)),
+                    sg.InputText(size=(20, 1), key='_STARTDATE_'),
+                    sg.CalendarButton('Cal', target='_STARTDATE_')],
+                   [sg.Text('Due Date', justification='right', size=(15, 1)),
+                    sg.InputText(size=(20, 1), key='_DUEDATE_'),
+                    sg.CalendarButton('Cal', target='_DUEDATE_')],
+                   ]
+
+    maincolumn4 = [[sg.Column(maincolumn2, background_color=mediumgreen),
+                    sg.Column(maincolumn3, background_color=lightblue)],
+                   [sg.Text('Record Selector', justification='center', size=(56, 1)),
+                    sg.Text('Cuurent Record'), sg.InputText(size=(10, 1), key='_CURRENTRECORD_')],
+                   [sg.Listbox(values=recordlist, size=(87, 8), key='_RECORDSELECTOR_', enable_events=True)],
+
+                   ]
+
+    '''                   [sg.Table(values=tablelist,
+                           headings=headers,
+                           max_col_width=10,
+                           justification='left',
+                           display_row_numbers='true',
+                           alternating_row_color='lightblue',
+                           num_rows=10, enable_events=True, key='_TABLE_')]'''
+
+    fileinfo = thelogfile + '  |  ' + thelogtable
+    # Define the mainscreen layout using the above layouts
+    mainscreenlayout = [[sg.Column(maincolumn1, background_color=mediumgreen),
+                         sg.Column(maincolumn4, background_color=mediumblue2)],
+                        [sg.Text('Message Area', size=(134, 1), key='_MESSAGEAREA_')],
+                        [sg.Button('New Log Entry', key='_NEW_'),
+                         sg.Button('Save New', key='_ADDNEW_', disabled=True),
+                         sg.Button('Save Changes', key='_SAVECHANGES_'),
+                         sg.Button('Preview Table', key='_PREVIEWTABLE_'),
+                         sg.Button('Cancel', key='_CANCEL_')],
+                        [sg.Text(fileinfo, key='_FILEINFO_', size=(134, 1), justification='center'), sg.Exit()]
+                        ]
+
+    # ########################################
+    # initialize main screen window
+    sg.SetOptions(element_padding=(2, 2))
+    window = sg.Window('Project Log App', background_color=mediumblue,
+            default_element_size=(15, 1)).Layout(mainscreenlayout)
+    window.Finalize()
+    # window.Refresh()
 
     if fillrecordselector(window, '_RECORDSELECTOR_', mylog):
         setmessage(window, 'fillrecordselector SUCCEEDED')
@@ -560,6 +617,10 @@ def main():
             therecords = mylog.readlogentry(recordid)
             fillformfields(window, therecords)
 
+        if event=='_PREVIEWTABLE_':
+            print('tablelist =>', tablelist)
+            print('headers =>', headers)
+            table_example(tablelist, headers)
 
 
 if __name__=="__main__":

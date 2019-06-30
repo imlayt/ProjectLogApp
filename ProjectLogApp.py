@@ -482,8 +482,10 @@ def main():
                 window.Refresh()
     # else:
     # sg.Popup('connected to the table')
-
-    maincolumn1 = [[sg.Text('Title', size=(15, 1), justification='right'), sg.Multiline(size=(40, 3), key='_TITLE_')],
+    sg.ChangeLookAndFeel('GreenTan')  # set the overall color scheme
+    maincolumn1 = [[sg.Text('Log Item Type', size=(15, 1), justification='right'),
+                    sg.InputText(size=(40, 1), key='_LOGITEMTYPE_')],
+                   [sg.Text('Title', size=(15, 1), justification='right'), sg.Multiline(size=(40, 3), key='_TITLE_')],
                    [sg.Text('Short Desc.', size=(15, 1), justification='right'),
                     sg.Multiline(size=(40, 3), key='_SHORTDESC_')],
                    [sg.Text('Long Desc.(opt)', size=(15, 1), justification='right'),
@@ -495,9 +497,7 @@ def main():
                    [sg.Text('Notes', size=(15, 1), justification='right'),
                     sg.Multiline(size=(40, 4), key='_NOTES_')]]
 
-    maincolumn2 = [[sg.Text('Log Item Type', size=(15, 1), justification='right'),
-                    sg.InputText(size=(20, 1), key='_LOGITEMTYPE_')],
-                   [sg.Text('Probability', size=(15, 1), justification='right'),
+    maincolumn2 = [[sg.Text('Probability', size=(15, 1), justification='right'),
                     sg.InputText(size=(20, 1), key='_PROBABILITY_')],
                    [sg.Text('Severity', size=(15, 1), justification='right'),
                     sg.InputText(size=(20, 1), key='_SEVERITY_')],
@@ -536,22 +536,21 @@ def main():
 
     fileinfo = thelogfile + '  |  ' + thelogtable
     # Define the mainscreen layout using the above layouts
-    mainscreenlayout = [[sg.Column(maincolumn1, background_color=mediumgreen),
-                         sg.Column(maincolumn4, background_color=mediumblue2)],
-                        [sg.Text('Message Area', size=(134, 1), key='_MESSAGEAREA_')],
+    mainscreenlayout = [[sg.Column(maincolumn1),
+                         sg.Column(maincolumn4)],
                         [sg.Button('New Log Entry', key='_NEW_'),
                          sg.Button('Save New', key='_ADDNEW_', disabled=True),
                          sg.Button('Save Changes', key='_SAVECHANGES_'),
-                         sg.Button('Preview Table', key='_PREVIEWTABLE_'),
-                         sg.Button('Cancel', key='_CANCEL_')],
-                        [sg.Text(fileinfo, key='_FILEINFO_', size=(134, 1), justification='center'), sg.Exit()]
+                         sg.Button('Preview Table', key='_PREVIEWTABLE_')],
+                        [sg.Text('Message Area', size=(134, 1), key='_MESSAGEAREA_', background_color='white')],
+                        [sg.Text(fileinfo, key='_FILEINFO_', size=(134, 1), justification='center',
+                                background_color='white'), sg.Exit()]
                         ]
 
     # ########################################
     # initialize main screen window
     sg.SetOptions(element_padding=(2, 2))
-    window = sg.Window('Project Log App', background_color=mediumblue,
-            default_element_size=(15, 1)).Layout(mainscreenlayout)
+    window = sg.Window('Project Log App', default_element_size=(15, 1,)).Layout(mainscreenlayout)
     window.Finalize()
     # window.Refresh()
 
